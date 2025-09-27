@@ -104,6 +104,7 @@ if (botonAgregar) {
           <td>$${mueble.precio}</td>
           <td>${mueble.stock}</td>
           <td><button class="botonEditar" data-index="${index}">Editar</button></td>
+          <td><button class="botonEliminar" data-index="${index}">Eliminar</button></td>
         `;
         tbody.appendChild(fila);
       });
