@@ -1,34 +1,31 @@
 // Mostrar mensaje de bienvenida al usuario
-window.addEventListener("DOMContentLoaded", function () {
-  //esperar a que cargue el DOM
-  const bienvenida = document.getElementById("bienvenida");
-  const usuario = JSON.parse(localStorage.getItem("usuarioLogueado")) || [];
-  const parrafo = document.createElement("p");
-  if (usuario.admin) {
-    // Verificar si es admin, sino redirigir a home clientes
-    parrafo.textContent = `¡Bienvenido/a Administrador ${usuario.nombre}`;
-  } else {
-    window.location.href = "home.html";
-  }
+const bienvenida = document.getElementById("bienvenida");
+const usuario = JSON.parse(localStorage.getItem("usuarioLogueado")) || [];
+const parrafo = document.createElement("p");
+if (usuario.admin) {
+  // Verificar si es admin, sino redirigir a home clientes
+  parrafo.textContent = `¡Bienvenido/a Administrador ${usuario.nombre}`;
+} else {
+  window.location.href = "home.html";
+}
 
-  bienvenida.innerHTML = ""; // Limpiar contenido previo
-  bienvenida.appendChild(parrafo);
-  // Crear y agregar el botón de Sign Out
-  const botonSignOut = document.createElement("button");
-  botonSignOut.id = "botonSignOut";
-  botonSignOut.textContent = "Sign Out";
-  botonSignOut.style.marginTop = "10px";
-  bienvenida.appendChild(botonSignOut);
+bienvenida.innerHTML = ""; // Limpiar contenido previo
+bienvenida.appendChild(parrafo);
+// Crear y agregar el botón de Sign Out
+const botonSignOut = document.createElement("button");
+botonSignOut.id = "botonSignOut";
+botonSignOut.textContent = "Sign Out";
+botonSignOut.style.marginTop = "10px";
+bienvenida.appendChild(botonSignOut);
 
-  // Mover el botón debajo del párrafo
-  const SignOut = document.getElementById("botonSignOut");
-  if (SignOut) {
-    SignOut.addEventListener("click", function () {
-      localStorage.removeItem("usuarioLogueado");
-      window.location.href = "../index.html";
-    });
-  }
-});
+// Mover el botón debajo del párrafo
+const SignOut = document.getElementById("botonSignOut");
+if (SignOut) {
+  SignOut.addEventListener("click", function () {
+    localStorage.removeItem("usuarioLogueado");
+    window.location.href = "../index.html";
+  });
+}
 
 // Obtener la lista de muebles desde localStorage
 let muebles = JSON.parse(localStorage.getItem("muebles")) || [];
