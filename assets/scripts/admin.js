@@ -1,243 +1,310 @@
-// Mostrar mensaje de bienvenida al usuario
+// Definir la URL base de la API
+const API_BASE = "http://localhost:3000/muebles";
+// Mostrar mensaje de bienvenida al administrador
 const bienvenida = document.getElementById("bienvenida");
-const usuario = JSON.parse(localStorage.getItem("usuarioLogueado")) || [];
-const parrafo = document.createElement("p");
-if (usuario.admin) {
-  // Verificar si es admin, sino redirigir a home clientes
-  parrafo.textContent = `¡Bienvenido/a Administrador ${usuario.nombre}`;
-} else {
-  window.location.href = "home.html";
+const avisos = document.getElementById("avisos");
+const tabla = document.getElementById("tablaMuebles");
+
+// asegurar tbody
+let tbody = tabla ? tabla.querySelector("tbody") : null;
+if (!tbody && tabla) {
+  tbody = document.createElement("tbody");
+  tabla.appendChild(tbody);
 }
-
-bienvenida.innerHTML = ""; // Limpiar contenido previo
-bienvenida.appendChild(parrafo);
-// Crear y agregar el botón de Sign Out
-const botonSignOut = document.createElement("button");
-botonSignOut.id = "botonSignOut";
-botonSignOut.textContent = "Sign Out";
-botonSignOut.style.marginTop = "10px";
-bienvenida.appendChild(botonSignOut);
-
-// Mover el botón debajo del párrafo
-const SignOut = document.getElementById("botonSignOut");
-if (SignOut) {
-  SignOut.addEventListener("click", function () {
+// Verificar si el usuario es admin
+const usuario = JSON.parse(localStorage.getItem("usuarioLogueado")) || {};
+if (!usuario.admin) {
+  window.location.href = "home.html";
+} else {
+  const p = document.createElement("p");
+  p.textContent = `¡Bienvenido/a Administrador ${usuario.nombre}!`;
+  bienvenida.innerHTML = "";
+  bienvenida.appendChild(p);
+  // Agregar botón Sign Out
+  const btnOut = document.createElement("button");
+  btnOut.id = "botonSignOut";
+  btnOut.textContent = "Sign Out";
+  btnOut.addEventListener("click", () => {
     localStorage.removeItem("usuarioLogueado");
     window.location.href = "../index.html";
   });
+  bienvenida.appendChild(btnOut);
 }
 
-// Obtener la lista de muebles desde localStorage
-let muebles = JSON.parse(localStorage.getItem("muebles")) || [];
+let muebles = [];
 
-const tbody = document.querySelector("#tablaMuebles tbody");
-muebles.forEach(function (mueble, index) {
-  const fila = document.createElement("tr");
-  fila.innerHTML = `
-    <td>${mueble.id}</td>
-    <td>${mueble.tipo}</td>
-    <td>${mueble.material}</td>
-    <td>$${mueble.precio}</td>
-    <td>${mueble.stock}</td>
-    <td><button class="botonEditar" data-index="${index}">Editar</button></td>
-    <td><button class="botonEliminar" data-index="${index}">Eliminar</button></td>
-  `;
-  tbody.appendChild(fila);
-});
-
-// Evento para los botones "Editar"
-tbody.addEventListener("click", function (e) {
-  if (e.target.classList.contains("botonEditar")) {
-    const idx = e.target.getAttribute("data-index");
-    const mueble = muebles[idx];
-    mostrarPopupEditar(mueble, function () {
-      // Actualizar la fila en la tabla
-      const fila = e.target.closest("tr");
-      // fila.children[0].textContent = mueble.id; //no la modifico porque es fija
-      fila.children[1].textContent = mueble.tipo;
-      fila.children[2].textContent = mueble.material;
-      fila.children[3].textContent = `$${mueble.precio}`;
-      fila.children[4].textContent = mueble.stock;
-      // Guardar los cambios en localStorage
-      localStorage.setItem("muebles", JSON.stringify(muebles));
-    });
-  }
-});
-
-//Evento para boton "Eliminar"
-tbody.addEventListener("click", function (e) {
-  if (e.target.classList.contains("botonEliminar")) {
-    const idx = e.target.getAttribute("data-index");
-    const mueble = muebles[idx];
-    mostrarPopupConfirmacion(
-      `¿Estás seguro de eliminar el mueble: ${mueble.tipo}?`,
-      function () {
-        muebles.splice(idx, 1); // Eliminar mueble del array por su id y 1 solo elemento
-        localStorage.setItem("muebles", JSON.stringify(muebles));
-        e.target.closest("tr").remove();
-        mostrarPopup("Mueble eliminado correctamente.", "green");
-      },
-      function () {
-        // Cancelado, no hacer nada
-      }
-    );
-  }
-});
-
-//Evento para boton Agregar Mueble
-const botonAgregar = document.getElementById("botonAgregarMueble");
-if (botonAgregar) {
-  botonAgregar.addEventListener("click", function () {
-    mostrarPopupAgregarMueble(function () {
-      // Refrescar la tabla
-      tbody.innerHTML = "";
-      muebles = JSON.parse(localStorage.getItem("muebles")) || [];
-      muebles.forEach(function (mueble, index) {
-        const fila = document.createElement("tr");
-        fila.innerHTML = `
-          <td>${mueble.id}</td>
-          <td>${mueble.tipo}</td>
-          <td>${mueble.material}</td>
-          <td>$${mueble.precio}</td>
-          <td>${mueble.stock}</td>
-          <td><button class="botonEditar" data-index="${index}">Editar</button></td>
-          <td><button class="botonEliminar" data-index="${index}">Eliminar</button></td>
-        `;
-        tbody.appendChild(fila);
-      });
-    });
-  });
-}
-
-// Función para mostrar el popup de edición
-function mostrarPopupEditar(mueble, onSave) {
-  // Crear el popup
-  let popup = document.getElementById("popupEditar");
-
+// mostrar popup mensajes genéricos
+function mostrarPopup(mensaje, color = "green") {
+  let popup = document.getElementById("popupMensaje");
   if (!popup) {
     popup = document.createElement("div");
-    popup.id = "popupEditar";
-    popup.innerHTML = `
-      <h3>Editar Mueble</h3>
-      <label>Tipo:<br><input type="text" id="tipoAEditar" value="${mueble.tipo}"></label><br><br>
-      <label>Material:<br><input type="text" id="materialAEditar" value="${mueble.material}"></label><br><br>
-      <label>Precio:<br><input type="number" id="precioAEditar" value="${mueble.precio}"></label><br><br>
-      <label>Stock:<br><input type="number" id="stockAEditar" value="${mueble.stock}"></label><br><br>
-      <button id="guardarEdicion">Guardar</button>
-      <button id="cancelarEdicion">Cancelar</button>
-    `;
+    popup.id = "popupMensaje";
+    popup.classList.add("popupMensaje");
     document.body.appendChild(popup);
-  } else {
-    //se actualizan los valores,sino aparecen los del mueble editado anteriormente
-    popup.innerHTML = `
-      <h3>Editar Mueble</h3>
-      <label>Tipo:<br><input type="text" id="tipoAEditar" value="${mueble.tipo}"></label><br><br>
-      <label>Material:<br><input type="text" id="materialAEditar" value="${mueble.material}"></label><br><br>
-      <label>Precio:<br><input type="number" id="precioAEditar" value="${mueble.precio}"></label><br><br>
-      <label>Stock:<br><input type="number" id="stockAEditar" value="${mueble.stock}"></label><br><br>
-      <button id="guardarEdicion">Guardar</button>
-      <button id="cancelarEdicion">Cancelar</button>
-    `;
-    popup.style.display = "block";
   }
-
-  document.getElementById("guardarEdicion").onclick = function () {
-    mueble.tipo = document.getElementById("tipoAEditar").value;
-    mueble.material = document.getElementById("materialAEditar").value;
-    mueble.precio = Number(document.getElementById("precioAEditar").value);
-    mueble.stock = Number(document.getElementById("stockAEditar").value);
-    popup.style.display = "none";
-    if (typeof onSave === "function") onSave(); //
-  };
-
-  document.getElementById("cancelarEdicion").onclick = function () {
-    popup.style.display = "none";
-  };
+  popup.textContent = mensaje;
+  popup.style.background = "#fff";
+  popup.style.color = color;
+  popup.style.display = "block";
+  setTimeout(() => (popup.style.display = "none"), 2000);
 }
-
-function mostrarPopupAgregarMueble(onSave) {
-  let popup = document.getElementById("popupAgregar");
-  if (!popup) {
-    popup = document.createElement("div");
-    popup.id = "popupAgregar";
-    popup.innerHTML = `
-      <h3>Agregar Mueble</h3>
-      <label>Tipo:<br><input type="text" id="nuevoTipo"></label><br><br>
-      <label>Material:<br><input type="text" id="nuevoMaterial"></label><br><br>
-      <label>Precio:<br><input type="number" id="nuevoPrecio"></label><br><br>
-      <label>Stock:<br><input type="number" id="nuevoStock"></label><br><br>
-      <button id="guardarNuevoMueble">Guardar</button>
-      <button id="cancelarNuevoMueble">Cancelar</button>
-    `;
-    document.body.appendChild(popup);
-  } else {
-    popup.style.display = "block";
-  }
-
-  document.getElementById("guardarNuevoMueble").onclick = function () {
-    const tipo = document.getElementById("nuevoTipo").value.trim();
-    const material = document.getElementById("nuevoMaterial").value.trim();
-    const precio = Number(document.getElementById("nuevoPrecio").value);
-    const stock = Number(document.getElementById("nuevoStock").value);
-
-    if (!tipo || !material || isNaN(precio) || isNaN(stock)) {
-      mostrarPopup("Completa todos los campos correctamente.", "red");
-      return;
-    }
-
-    // Generar nuevo ID de manera automática
-    let muebles = JSON.parse(localStorage.getItem("muebles")) || [];
-    const nuevoId =
-      muebles.length > 0 ? Math.max(...muebles.map((m) => m.id)) + 1 : 1;
-
-    const nuevoMueble = {
-      id: nuevoId,
-      tipo: tipo,
-      material: material,
-      precio: precio,
-      stock: stock,
-    };
-
-    muebles.push(nuevoMueble);
-    localStorage.setItem("muebles", JSON.stringify(muebles));
-    popup.style.display = "none";
-    if (typeof onSave === "function") onSave();
-    mostrarPopup("Mueble agregado correctamente.", "green");
-  };
-
-  document.getElementById("cancelarNuevoMueble").onclick = function () {
-    popup.style.display = "none";
-  };
-}
-
-// Función para mostrar popup de confirmación
+// popup confirmación
 function mostrarPopupConfirmacion(mensaje, onConfirm, onCancel) {
   let popup = document.getElementById("popupConfirmar");
   if (!popup) {
     popup = document.createElement("div");
     popup.id = "popupConfirmar";
-    popup.innerHTML = `
-      <p style="margin-bottom:20px;">${mensaje}</p>
-      <button id="confirmarEliminar">Confirmar</button>
-      <button id="cancelarEliminar">Cancelar</button>
-    `;
+    popup.classList.add("popupConfirmar");
     document.body.appendChild(popup);
-  } else {
-    popup.innerHTML = `
-      <p style="margin-bottom:20px;">${mensaje}</p>
-      <button id="confirmarEliminar">Confirmar</button>
-      <button id="cancelarEliminar">Cancelar</button>
-    `;
-    popup.style.display = "block";
   }
-
-  document.getElementById("confirmarEliminar").onclick = function () {
+  popup.innerHTML = `
+    <p style="margin-bottom:16px;">${mensaje}</p>
+    <div style="text-align:right">
+      <button id="confirmarEliminar">Sí</button>
+      <button id="cancelarEliminar">No</button>
+    </div>
+  `;
+  popup.style.display = "block";
+  document.getElementById("confirmarEliminar").onclick = () => {
     popup.style.display = "none";
     if (typeof onConfirm === "function") onConfirm();
   };
-
-  document.getElementById("cancelarEliminar").onclick = function () {
+  document.getElementById("cancelarEliminar").onclick = () => {
     popup.style.display = "none";
     if (typeof onCancel === "function") onCancel();
   };
 }
+
+// render de la tabla muebles
+function renderTabla() {
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  muebles.forEach((m) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${m.id}</td>
+      <td>${m.tipo}</td>
+      <td>${m.material}</td>
+      <td>$${m.precio}</td>
+      <td>${m.stock}</td>
+      <td><button class="botonEditar" data-id="${m.id}">Editar</button></td>
+      <td><button class="botonEliminar" data-id="${m.id}">Eliminar</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// API
+async function cargarMuebles() {
+  try {
+    const res = await fetch(API_BASE);
+    if (!res.ok) throw new Error("API no disponible");
+    muebles = await res.json();
+    renderTabla();
+    if (avisos) {
+      avisos.textContent = "Muebles cargados desde servidor.";
+      avisos.style.color = "green";
+    }
+  } catch (err) {
+    if (avisos) {
+      avisos.textContent =
+        "No se pudo conectar al servidor json-server. ejecute en la terminal json-server --watch db.json --port 3000";
+      avisos.style.color = "red";
+    }
+    muebles = [];
+    renderTabla();
+  }
+}
+
+async function agregarMuebleAPI(nuevo) {
+  const res = await fetch(API_BASE, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(nuevo),
+  });
+  if (!res.ok) throw new Error("Error POST");
+  return res.json();
+}
+
+async function actualizarMuebleAPI(m) {
+  const res = await fetch(`${API_BASE}/${m.id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(m),
+  });
+  if (!res.ok) throw new Error("Error PUT");
+  return res.json();
+}
+
+async function eliminarMuebleAPI(id) {
+  const res = await fetch(`${API_BASE}/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Error DELETE");
+  return true;
+}
+
+// popups editar / agregar
+function mostrarPopupEditar(mueble, onSave) {
+  let popup = document.getElementById("popupEditar");
+  const html = `
+    <h3>Editar Mueble</h3>
+    <label>Tipo:<br><input type="text" id="tipoEdit" value="${mueble.tipo}"></label><br><br>
+    <label>Material:<br><input type="text" id="materialEdit" value="${mueble.material}"></label><br><br>
+    <label>Precio:<br><input type="number" id="precioEdit" value="${mueble.precio}"></label><br><br>
+    <label>Stock:<br><input type="number" id="stockEdit" value="${mueble.stock}"></label><br><br>
+    <div style="text-align:right">
+      <button id="guardarEdit">Guardar</button>
+      <button id="cancelarEdit">Cancelar</button>
+    </div>
+  `;
+  if (!popup) {
+    popup = document.createElement("div");
+    popup.id = "popupEditar";
+    popup.classList.add("popupEditar");
+    popup.innerHTML = html;
+    document.body.appendChild(popup);
+  } else {
+    popup.innerHTML = html;
+    popup.style.display = "block";
+  }
+
+  document.getElementById("guardarEdit").onclick = async () => {
+    mueble.tipo = document.getElementById("tipoEdit").value.trim();
+    mueble.material = document.getElementById("materialEdit").value.trim();
+    mueble.precio = Number(document.getElementById("precioEdit").value);
+    mueble.stock = Number(document.getElementById("stockEdit").value);
+    try {
+      const actualizado = await actualizarMuebleAPI(mueble);
+      const idx = muebles.findIndex((x) => x.id === actualizado.id);
+      if (idx > -1) muebles[idx] = actualizado;
+      renderTabla();
+      mostrarPopup("Mueble actualizado.", "green");
+      if (typeof onSave === "function") onSave();
+      popup.style.display = "none";
+    } catch (err) {
+      if (avisos) {
+        avisos.textContent = `Error actualizando en servidor: ${err}`;
+        avisos.style.color = "red";
+      }
+    }
+  };
+
+  document.getElementById("cancelarEdit").onclick = () => {
+    popup.style.display = "none";
+  };
+}
+
+function mostrarPopupAgregar(onSave) {
+  let popup = document.getElementById("popupAgregar");
+  const html = `
+    <h3>Agregar Mueble</h3>
+    <label>Tipo:<br><input type="text" id="tipoNew"></label><br><br>
+    <label>Material:<br><input type="text" id="materialNew"></label><br><br>
+    <label>Precio:<br><input type="number" id="precioNew"></label><br><br>
+    <label>Stock:<br><input type="number" id="stockNew"></label><br><br>
+    <div>
+      <button id="guardarNew">Guardar</button>
+      <button id="cancelarNew">Cancelar</button>
+    </div>
+  `;
+  if (!popup) {
+    popup = document.createElement("div");
+    popup.id = "popupAgregar";
+    popup.classList.add("popupAgregar");
+
+    popup.innerHTML = html;
+    document.body.appendChild(popup);
+  } else {
+    popup.innerHTML = html;
+    popup.style.display = "block";
+  }
+
+  document.getElementById("guardarNew").onclick = async () => {
+    const nuevoid =
+      muebles.length > 0 ? Math.max(...muebles.map((m) => m.id)) + 1 : 1;
+    const id = String(nuevoid);
+    const tipo = document.getElementById("tipoNew").value.trim();
+    const material = document.getElementById("materialNew").value.trim();
+    const precio = Number(document.getElementById("precioNew").value);
+    const stock = Number(document.getElementById("stockNew").value);
+    if (!tipo || !material || isNaN(precio) || isNaN(stock)) {
+      mostrarPopup("Completa todos los campos correctamente.", "red");
+      return;
+    }
+    try {
+      const creado = await agregarMuebleAPI({
+        id,
+        tipo,
+        material,
+        precio,
+        stock,
+      });
+      muebles.push(creado);
+      renderTabla();
+      mostrarPopup("Mueble agregado.", "green");
+      popup.style.display = "none";
+      if (typeof onSave === "function") onSave();
+    } catch (err) {
+      if (avisos) {
+        avisos.textContent = `Error agregando en servidor: ${err}`;
+        avisos.style.color = "red";
+      }
+    }
+  };
+
+  document.getElementById("cancelarNew").onclick = () => {
+    popup.style.display = "none";
+  };
+}
+
+// delegación eventos editar/eliminar
+tbody.addEventListener("click", (e) => {
+  const btn = e.target.closest("button");
+  if (!btn || !tbody.contains(btn)) return;
+
+  if (btn.classList.contains("botonEditar")) {
+    const id = Number(btn.dataset.id);
+    const mueble = muebles.find((m) => Number(m.id) === id);
+    if (mueble) {
+      mostrarPopupEditar(mueble);
+    } else {
+      if (avisos) {
+        avisos.textContent = `No se encontró mueble para editar. id: ${id}`;
+        avisos.style.color = "orange";
+      }
+    }
+  }
+
+  if (btn.classList.contains("botonEliminar")) {
+    const id = Number(btn.dataset.id);
+    const mueble = muebles.find((m) => Number(m.id) === id);
+    if (!mueble) return;
+    mostrarPopupConfirmacion(
+      `¿Eliminar Mueble: ${mueble.tipo}?`,
+      async () => {
+        try {
+          await eliminarMuebleAPI(id);
+          muebles = muebles.filter((m) => Number(m.id) !== id);
+          renderTabla();
+          mostrarPopup("Mueble eliminado.", "green");
+        } catch (err) {
+          if (avisos) {
+            avisos.textContent = `Error eliminando en servidor: ${err}`;
+            avisos.style.color = "red";
+          }
+        }
+      },
+      () => {}
+    );
+  }
+});
+
+// boton agregar
+const botonAgregar = document.getElementById("botonAgregarMueble");
+if (botonAgregar) {
+  botonAgregar.addEventListener("click", () => mostrarPopupAgregar());
+}
+
+// carga inicial
+cargarMuebles();

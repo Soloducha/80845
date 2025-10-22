@@ -1,0 +1,74 @@
+{
+  "muebles": [
+    {
+      "id": "1",
+      "tipo": "Silla Clasica",
+      "material": "Madera",
+      "precio": 4500,
+      "stock": 2
+    },
+    {
+      "id": "2",
+      "tipo": "Mesa Desayuno",
+      "material": "Metal",
+      "precio": 13000,
+      "stock": 4
+    },
+    {
+      "id": "3",
+      "tipo": "Sofá Blanc",
+      "material": "Cuero",
+      "precio": 180000,
+      "stock": 8
+    },
+    {
+      "id": "4",
+      "tipo": "Silla Moderna",
+      "material": "Madera",
+      "precio": 4200,
+      "stock": 5
+    },
+    {
+      "id": "5",
+      "tipo": "Mesa extensible",
+      "material": "Madera",
+      "precio": 10000,
+      "stock": 5
+    },
+    {
+      "id": "6",
+      "tipo": "Sofá Charleston",
+      "material": "Cuero",
+      "precio": 200000,
+      "stock": 9
+    },
+    {
+      "id": "7",
+      "tipo": "Silla Vintage",
+      "material": "Metal",
+      "precio": 5000,
+      "stock": 7
+    },
+    {
+      "id": "8",
+      "tipo": "Mesa Comedor",
+      "material": "Madera",
+      "precio": 8000,
+      "stock": 4
+    },
+    {
+      "id": "9",
+      "tipo": "Sofá Retro",
+      "material": "Tela",
+      "precio": 120000,
+      "stock": 4
+    },
+    {
+      "id": "10",
+      "tipo": "asd",
+      "material": "asd",
+      "precio": 123,
+      "stock": 12
+    }
+  ]
+}
